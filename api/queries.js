@@ -6,12 +6,12 @@ export async function get_all_products() {
     products {
       product_id
       name
+      description
       quantity
       is_on_sale
-      description
       price
     }
   } 
-      `)
+  `)
   return data;
 }

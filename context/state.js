@@ -6,7 +6,7 @@ const DispatchStateContext = createContext();
 export function GlobalContextWrapper({children}) {
     const basket = {
         count: 0,
-        infos: {},
+        infos: [],
     }
 
     const [state, dispatch] = useReducer((state,new_value) => ({...state, ...new_value}), basket);

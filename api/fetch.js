@@ -18,5 +18,8 @@ export default async function fetch_api(query) {
     return null;
   };
 
-  return json.data.products;
+  return json.data.products.map((product) => {
+    product.count = 1;
+    return product
+  });
 }
