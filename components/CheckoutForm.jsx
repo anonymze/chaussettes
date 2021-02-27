@@ -1,34 +1,53 @@
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { destroyCookie } from 'nookies';
 import { useState } from 'react';
+import { useGlobalContext } from '../context/state';
+import axios from 'axios';
 
-export default function CheckoutForm({ payment_intent }) {
-    const stripe = useStripe();
-    const elements = useElements();
+export default function CheckoutForm({ total_basket, dispatch }) {
+    const [you_can_pay, setYouCanPay] = useState(true);
     const [checkout_success, setCheckoutSuccess] = useState();
     const [checkout_error, setCheckoutError] = useState();
-
-
+    const stripe = useStripe();
+    const elements = useElements();
 
     const handle_submit = async (e) => {
         e.preventDefault();
 
-        try {
-            const info_payment = await stripe.confirmCardPayment(payment_intent.client_secret, {
-                payment_method: {
+        if (total_basket > 0) {
+            if (you_can_pay) {
+                setYouCanPay(false);   
+                const { error, paymentMethod } = await stripe.createPaymentMethod({
+                    type: 'card',
                     card: elements.getElement(CardElement)
+                });
+
+                if (!error) {
+                    const { id } = paymentMethod;
+                    try {     
+                        const { data: {confirm} } = await axios.post("/api/charge", { id, amount: total_basket * 100 });
+                        if (confirm === "succeeded") {
+                            setCheckoutSuccess(true);
+                            dispatch({
+                                count: 0,
+                                infos: []
+                            })
+                        }
+                        else {
+                            setCheckoutError('La transaction n\'a pas pu être effectuée, veuillez essayer plus tard.');
+                        }
+
+                    }
+                    catch {
+                        setCheckoutError('Une erreur est survenue, veuillez vérifier vos informations.');
+                    }
                 }
-            });
-
-            if (info_payment.error) throw new Error(info_payment.error.message);
-
-            if (info_payment.paymentIntent && info_payment.paymentIntent.status === "succeeded") {
-                destroyCookie(null, 'payment_intent_id');
-                setCheckoutSuccess(true);
-            }
-
-        } catch (err) {
-            setCheckoutError(err.message)
+                else {
+                    setCheckoutError(error.message);
+                }
+            } 
+        }
+        else {
+            setCheckoutError('Votre panier est vide, vous ne pouvez pas effectuer d\'achat.');
         }
     }
 
@@ -37,8 +56,8 @@ export default function CheckoutForm({ payment_intent }) {
     return (
         <div>
             <form onSubmit={handle_submit}>
-                <CardElement />
-                <button type="submit" disabled={!stripe}>Payer</button>
+                <CardElement onChange={(() => setYouCanPay(true))} />
+                <button type="submit" disabled={!stripe || total_basket <= 0 || !you_can_pay }>Payer</button>
             </form>
             <p>{checkout_error && <span>{checkout_error}</span>}</p>
         </div>

@@ -1,10 +1,9 @@
 import React from 'react';
 import { useGlobalContext } from '../context/state';
 import Header from '../components/layout/Header';
-// import {destroyCookie} from 'nookies';
 
 // Queries
-import { get_all_products } from '../api/queries';
+import { get_all_products } from '../lib/api/queries';
 
 // Components
 import Card from '../components/Card';
@@ -52,9 +51,8 @@ export default function Home({ all_products }) {
   )
 }
 
-export async function getServerSideProps(ctx) {
+export async function getServerSideProps() {
   const all_products = await get_all_products();  
-
 
   if (!all_products) {
     return {
